@@ -1,0 +1,17 @@
+{
+  "name": "figma-ui-page-export-helper",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "将 Figma 画板与设计资源整理为 Agent 可读取的交付包",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && node scripts/build.mjs",
+    "test": "node --experimental-strip-types --test tests/*.test.ts"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "1.141.0",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2"
+  }
+}

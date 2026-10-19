@@ -1,0 +1,9 @@
+{
+  "name": "Agent导出助手",
+  "id": "figma-ui-page-export-helper",
+  "api": "1.0.0",
+  "main": "dist/main.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page"
+}
