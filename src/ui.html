@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agent导出助手</title>
+    <style>
+      :root { font: 13px/1.5 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #17191d; background: #fff; }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 16px; }
+      h1 { margin: 0 0 4px; font-size: 19px; line-height: 1.3; }
+      h2 { margin: 16px 0 8px; font-size: 13px; }
+      p { margin: 0; }
+      .subtitle, .muted, .help { color: #777e89; }
+      .subtitle { margin-bottom: 16px; }
+      .selection { border: 1px solid #e4e7ec; border-radius: 8px; padding: 10px 12px; }
+      #selection-summary { font-weight: 650; }
+      #selection-names { margin: 6px 0 0; padding: 0; list-style: none; max-height: 88px; overflow: auto; }
+      #selection-names li { padding: 2px 0; color: #434a55; overflow-wrap: anywhere; }
+      #selection-names span { color: #8a9099; font-size: 11px; }
+      fieldset { min-width: 0; margin: 12px 0; padding: 10px 12px 12px; border: 1px solid #e1e4e8; border-radius: 8px; }
+      legend { padding: 0 6px; color: #69717c; font-weight: 700; letter-spacing: .04em; }
+      .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .choice { display: block; min-height: 66px; border: 1px solid #e1e4e8; border-radius: 8px; padding: 9px; cursor: pointer; }
+      .choice:has(input:checked) { border-color: #96b9e9; background: #f7faff; color: #3477c5; }
+      .choice input { margin: 0 6px 0 0; accent-color: #087fff; }
+      .choice strong { font-size: 13px; }
+      .choice small { display: block; margin: 4px 0 0 22px; color: #858b95; line-height: 1.35; }
+      .inline-options { display: flex; flex-wrap: wrap; gap: 12px; }
+      .inline-options label, .check { display: flex; align-items: center; gap: 7px; }
+      input[type="checkbox"], input[type="radio"] { accent-color: #087fff; }
+      .form-row { display: grid; grid-template-columns: 1fr 90px; align-items: center; gap: 10px; margin-top: 10px; }
+      .form-row label { color: #515965; }
+      select, input[type="number"], input[type="text"] { width: 100%; min-height: 34px; border: 1px solid #d9dde3; border-radius: 6px; padding: 6px 8px; background: #fff; color: #242830; }
+      .form-row.wide { grid-template-columns: 1fr 1fr; }
+      #config-summary { border-radius: 6px; padding: 9px 10px; background: #f6f7f9; color: #343a43; font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+      button { min-height: 36px; border: 1px solid #d8dce2; border-radius: 7px; padding: 0 12px; background: #fff; color: #292e36; font: inherit; cursor: pointer; }
+      button:hover:not(:disabled) { background: #f4f7fb; }
+      button:disabled { opacity: .55; cursor: default; }
+      #generate { width: 100%; min-height: 44px; border: 0; background: #087fff; color: #fff; font-weight: 700; font-size: 15px; }
+      #generate:hover:not(:disabled) { background: #0873e2; }
+      #status { min-height: 20px; margin: 9px 0; color: #68717d; font-size: 12px; overflow-wrap: anywhere; }
+      #result { border-top: 1px solid #e5e7eb; margin-top: 14px; padding-top: 12px; }
+      #result-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
+      #markdown-preview { display: block; width: 100%; min-height: 170px; margin-top: 8px; resize: vertical; border: 1px solid #e0e3e8; border-radius: 7px; padding: 9px; font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+      details { margin-top: 12px; }
+      summary { color: #66707c; cursor: pointer; font-size: 12px; }
+      #legacy-actions { display: flex; gap: 7px; margin-top: 8px; }
+    </style>
+  </head>
+  <body>
+    <h1>Agent导出助手</h1>
+    <p class="subtitle">将选中画板导出为 Agent 可读取的 Markdown 与资源</p>
+
+    <h2>当前选中画框</h2>
+    <section class="selection" aria-live="polite">
+      <p id="selection-summary">正在读取选区…</p>
+      <ul id="selection-names"><li class="muted">等待 Figma 主线程响应</li></ul>
+    </section>
+
+    <fieldset>
+      <legend>导出类型</legend>
+      <div class="choices">
+        <label class="choice"><input type="radio" name="mode" value="delivery" checked /><strong>设计交付包</strong><small>多画板 Markdown、JSON 与资源 ZIP</small></label>
+        <label class="choice"><input type="radio" name="mode" value="node-url" /><strong>Frame Node</strong><small>仅生成可定位的 Figma Node URL</small></label>
+      </div>
+      <div id="file-key-row" class="form-row wide" hidden><label for="file-key">Figma 文件 Key（可选）</label><input id="file-key" type="text" placeholder="可从 Figma 文件 URL 中复制" /></div>
+      <p class="help" id="file-key-help">部分 Figma 插件环境不会开放 file key；Node URL 模式可在此粘贴文件 URL 中的 key。</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>文档详细度</legend>
+      <div class="choices">
+        <label class="choice"><input type="radio" name="detail" value="compact" checked /><strong>Compact</strong><small>主文档精简，适合 Agent 直接读取</small></label>
+        <label class="choice"><input type="radio" name="detail" value="extended" /><strong>Extended</strong><small>输出详细图层、CSS 与 DESIGN.extended.md 调试摘要</small></label>
+      </div>
+      <div class="form-row"><label for="max-depth">解析层级深度</label><input id="max-depth" type="number" min="1" max="20" value="4" /></div>
+      <div class="form-row wide"><label for="platform">目标平台</label><select id="platform"><option value="mobile">Mobile</option><option value="web">Web</option><option value="desktop">Desktop</option></select></div>
+    </fieldset>
+
+    <fieldset id="asset-settings">
+      <legend>资源</legend>
+      <div class="inline-options">
+        <label><input type="radio" name="asset-mode" value="settings" />仅导出设置</label>
+        <label><input type="radio" name="asset-mode" value="auto" checked />自动识别</label>
+      </div>
+      <p class="help">自动识别图片填充和可导出的矢量图层；设置模式遵循 Figma Export 面板。</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>解析规则</legend>
+      <div class="form-row wide"><label for="ignore-name">忽略图层名称包含</label><input id="ignore-name" type="text" value="IGNORE" /></div>
+      <label class="check" style="margin-top:10px"><input id="coordinate-sort" type="checkbox" checked />按坐标排序（从上到下、从左到右）</label>
+    </fieldset>
+
+    <h2>配置摘要</h2>
+    <p id="config-summary"></p>
+    <button id="generate" type="button" disabled>生成 Markdown 与资源</button>
+    <p id="status" role="status" aria-live="polite">选择一个或多个 Frame 后开始生成。</p>
+
+    <section id="result" hidden>
+      <h2>结果</h2>
+      <div id="result-actions">
+        <button id="copy-markdown" type="button" disabled>复制 Markdown</button>
+        <button id="download-markdown" type="button" disabled>下载 Markdown</button>
+        <button id="download-assets" type="button" disabled>下载资源包</button>
+      </div>
+      <textarea id="markdown-preview" readonly aria-label="Markdown 预览"></textarea>
+    </section>
+
+    <details>
+      <summary>单独导出 PNG / JSON</summary>
+      <div id="legacy-actions">
+        <button type="button" data-legacy-export="json">当前 Frame JSON</button>
+        <button type="button" data-legacy-export="png">当前 Frame PNG</button>
+      </div>
+    </details>
+    <script>__UI_SCRIPT__</script>
+  </body>
+</html>
