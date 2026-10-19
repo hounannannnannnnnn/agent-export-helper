@@ -1,9 +1,12 @@
 {
   "name": "Agent导出助手",
-  "id": "figma-ui-page-export-helper",
+  "id": "1693887998575211978",
   "api": "1.0.0",
   "main": "dist/main.js",
   "ui": "dist/ui.html",
   "editorType": ["figma"],
-  "documentAccess": "dynamic-page"
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  }
 }
